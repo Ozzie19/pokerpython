@@ -87,22 +87,29 @@ def bettingAlgorithmTests():
     # Alice bets 10 chips
     round.handle_bet(alice, 10)
     print(f'Alice bets 10, pot is now {round.pot}')
+    print (f'Alice has {alice.chips} chips left')
 
     # Bob raises to 20
-    round.handle_raise(bob, 10)
+    round.handle_raise(bob, 110)
     print(f'Bob raises to 20, pot is now {round.pot}')
 
     # Alice calls
     round.handle_call(alice)
     print(f'Alice calls, pot is now {round.pot}')
-
+    print (f'Alice has {alice.chips} chips left')
+    print (f'Bob has {bob.chips} chips left')
+    
     # Bob checks
     bob.check()
     print(f'Bob checks')
+    print (f'Bob has {bob.chips} chips left')
 
     # Alice folds
     alice.fold()
     print(f'Alice folds, current bet is {alice.current_bet}')
+    print (f'Alice has {alice.chips} chips left')
 
     # End of betting round
     print(f'End of betting round, pot is {round.pot}')
+
+bettingAlgorithmTests()
