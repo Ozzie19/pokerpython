@@ -71,45 +71,96 @@ class BettingRound:
 
     # The handle_check method handles a player checking.
     def handle_check(self, player):
-        pass  # (This method is not yet implemented.)
+        # Print a message indicating the player's action.
+        print(f'{player.name} checks.')
+        # Print the current state of the pot and the player's chips.
+        print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
 
     # The handle_bet method handles a player betting a certain amount.
-    # It checks if the player has enough chips to make the bet.
-    # If the player does not have enough chips, it returns False.
     def handle_bet(self, player, amount):
-        if player.bet(amount):  # If the player can make the bet...
-            self.pot += amount  # Add the bet amount to the pot.
-            self.current_bet = amount  # Set the current bet to the bet amount.
-            return True  # The bet was successful.
+        # If the player can make the bet...
+        if player.bet(amount):
+            # Add the bet amount to the pot and set the current bet to the bet amount.
+            self.pot += amount
+            self.current_bet = amount
+            # Print a message indicating the player's action.
+            print(f'{player.name} bets {amount}.')
+            # Print the current state of the pot and the player's chips.
+            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+            return True
         else:
-            return False  # The bet was not successful.
+            # If the player cannot make the bet, print a message indicating the invalid action.
+            print(f'{player.name} tried to bet {amount}, but the bet was invalid.')
+            # Print the player's remaining chips.
+            print(f'{player.name} has {player.chips} chips left.')
+            return False
 
     # The handle_call method handles a player calling the current bet.
-    # It checks if the player has enough chips to make the call.
-    # If the player does not have enough chips, it returns False.
     def handle_call(self, player):
-        if player.call(self.current_bet):  # If the player can make the call...
-            self.pot += self.current_bet  # Add the current bet to the pot.
-            return True  # The call was successful.
+        # If the player can make the call...
+        if player.call(self.current_bet):
+            # Add the current bet to the pot.
+            self.pot += self.current_bet
+            # Print a message indicating the player's action.
+            print(f'{player.name} calls.')
+            # Print the current state of the pot and the player's chips.
+            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+            return True
         else:
-            return False  # The call was not successful.
+            # If the player cannot make the call, print a message indicating the invalid action.
+            print(f'{player.name} tried to call, but the call was invalid.')
+            # Print the player's remaining chips.
+            print(f'{player.name} has {player.chips} chips left.')
+            return False
 
     # The handle_raise method handles a player raising the current bet.
-    # It checks if the player has enough chips to make the raise.
-    # If the player does not have enough chips, it returns False.
     def handle_raise(self, player, amount):
-        if player.raise_bet(amount):  # If the player can make the raise...
-            self.pot += player.current_bet  # Add the player's current bet to the pot.
-            self.current_bet = player.current_bet  # Set the current bet to the player's current bet.
-            return True  # The raise was successful.
+        # If the player can make the raise...
+        if player.raise_bet(amount):
+            # Add the player's current bet to the pot and set the current bet to the player's current bet.
+            self.pot += player.current_bet
+            self.current_bet = player.current_bet
+            # Print a message indicating the player's action.
+            print(f'{player.name} raises to {player.current_bet}.')
+            # Print the current state of the pot and the player's chips.
+            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+            return True
         else:
-            return False  # The raise was not successful.
-        
-    # The handle_fold method handles a player folding their hand.
-    def handle_fold(self, player):
-        player.fold()
+            # If the player cannot make the raise, print a message indicating the invalid action.
+            print(f'{player.name} tried to raise to {player.current_bet + amount}, but the raise was invalid.')
+            # Print the player's remaining chips.
+            print(f'{player.name} has {player.chips} chips left.')
+            return False
 
-def bettingAlgorithmTests():    
+    # The handle_fold method handles a player folding.
+    def handle_fold(self, player):
+        # The player folds.
+        player.fold()
+        # Print a message indicating the player's action.
+        print(f'{player.name} folds.')
+        # Print the current state of the pot and the player's chips.
+        print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+
+    # The end_round method ends the current betting round.
+    def end_round(self):
+        # Reset the current bet to 0.
+        self.current_bet = 0
+        # Store the current pot in a variable.
+        pot_to_distribute = self.pot
+        # Reset the pot to 0.
+        self.pot = 0
+        # Return the pot to be distributed to the winning player(s).
+        return pot_to_distribute
+        round.distribute_pot(winners, pot_to_distribute)
+    
+    def distribute_pot(self, winners, pot_to_distribute):
+        # Divide the pot evenly among the winners
+        share = pot_to_distribute // len(winners)
+        for player in winners:
+            # Add the share to each winner's chips
+            player.chips += share
+
+def bettingAlgorithmTests():
     # Create some players
     alice = Player('Alice', 100)
     bob = Player('Bob', 100)
@@ -118,32 +169,31 @@ def bettingAlgorithmTests():
     round = BettingRound([alice, bob])
 
     # Alice tries to bet 110 chips, which is more than she has
-    if not round.handle_bet(alice, 110):
-        print('Alice tried to bet 110 chips, but the bet was invalid.')
-    print(f'Alice has {alice.chips} chips left')
+    round.handle_bet(alice, 110)
 
     # Alice bets 10 chips, which is a valid bet
-    if round.handle_bet(alice, 10):
-        print('Alice successfully bet 10 chips.')
-    print(f'Alice has {alice.chips} chips left')
+    round.handle_bet(alice, 10)
 
     # Bob tries to raise to 110, which is more than he has
-    if not round.handle_raise(bob, 110):
-        print('Bob tried to raise to 110, but the raise was invalid.')
-    print(f'Bob has {bob.chips} chips left')
+    round.handle_raise(bob, 110)
 
-    # Bob raises to 20, which is a valid raise
-    if round.handle_raise(bob, 20):
-        print('Bob successfully raised to 20.')
-    print(f'Bob has {bob.chips} chips left')
+    # Bob calls, which should match Alice's bet of 10 chips
+    round.handle_call(bob)
 
-    # Alice calls
-    round.handle_call(alice)
-    print(f'Alice calls, pot is now {round.pot}')
-    print(f'Alice has {alice.chips} chips left')
+    # Alice checks, which should be a valid action since the bets are even
+    round.handle_check(alice)
 
-    # Bob checks
-    bob.check()
-    print('Bob checks')
+    # Bob folds, which should end his participation in the round
+    round.handle_fold(bob)
+
+      # End the round and store the pot to distribute in a variable
+    pot_to_distribute = round.end_round()
+    print(f'The round has ended. The pot to distribute is {pot_to_distribute}')
+
+    # Assume Alice is the winner and distribute the pot to her
+    round.distribute_pot([alice], pot_to_distribute)
+
+    # Print Alice's chips to verify that she received the pot
+    print(f'Alice now has {alice.chips} chips')
 
 bettingAlgorithmTests()
