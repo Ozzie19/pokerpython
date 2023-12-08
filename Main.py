@@ -1,4 +1,6 @@
 from Deck import Card, Deck
+import random
+from itertools import combinations
 
 #deck = Deck()
 #deck.shuffle()
@@ -160,40 +162,125 @@ class BettingRound:
             # Add the share to each winner's chips
             player.chips += share
 
-def bettingAlgorithmTests():
-    # Create some players
-    alice = Player('Alice', 100)
-    bob = Player('Bob', 100)
+class Game:
+    def __init__(self):
+        self.players = []
+        self.current_round = None
 
-    # Create a betting round with those players
-    round = BettingRound([alice, bob])
+    def add_player(self, name, chips):
+        player = Player(name, chips)
+        self.players.append(player)
 
-    # Alice tries to bet 110 chips, which is more than she has
-    round.handle_bet(alice, 110)
+    def start_game(self):
+        num_players = int(input("Enter the number of players: "))
+        chips = int(input("Enter the initial chips for each player: "))
+        for i in range(num_players):
+            name = input(f"Enter the name of player {i+1}: ")
+            self.add_player(name, chips)
 
-    # Alice bets 10 chips, which is a valid bet
-    round.handle_bet(alice, 10)
+    def deal_initial_cards(self):
+        # Create a deck of cards
+        deck = Deck() # assuming 1-52 represents a standard deck of cards
 
-    # Bob tries to raise to 110, which is more than he has
-    round.handle_raise(bob, 110)
+        # Shuffle the deck
+        random.shuffle(deck)
 
-    # Bob calls, which should match Alice's bet of 10 chips
-    round.handle_call(bob)
+        # Deal two cards to each player
+        for player in self.players:
+            player.cards = [deck.pop(), deck.pop()]
 
-    # Alice checks, which should be a valid action since the bets are even
-    round.handle_check(alice)
 
-    # Bob folds, which should end his participation in the round
-    round.handle_fold(bob)
+class PokerHandEvaluator:
+    @staticmethod
+    def evaluate_hand(player_cards, community_cards):
+        all_cards = player_cards + community_cards
 
-      # End the round and store the pot to distribute in a variable
-    pot_to_distribute = round.end_round()
-    print(f'The round has ended. The pot to distribute is {pot_to_distribute}')
+        # Generate all possible combinations of 5 cards from the player's and community's cards
+        possible_hands = list(combinations(all_cards, 5))
 
-    # Assume Alice is the winner and distribute the pot to her
-    round.distribute_pot([alice], pot_to_distribute)
+        # Evaluate each hand and find the best one
+        best_hand = max(possible_hands, key=PokerHandEvaluator.rank_hand)
 
-    # Print Alice's chips to verify that she received the pot
-    print(f'Alice now has {alice.chips} chips')
+        return best_hand
 
-bettingAlgorithmTests()
+
+    @staticmethod
+    def rank_hand(hand):
+        # Extract values and suits from the hand
+        values = sorted([card.rank for card in hand], key=lambda x: ranks.index(x))
+        suits = [card.suit for card in hand]
+        # Define hand rankings
+        hand_rankings = [
+            ('High Card', 0),
+            ('One Pair', 1),
+            ('Two Pair', 2),
+            ('Three of a Kind', 3),
+            ('Straight', 4),
+            ('Flush', 5),
+            ('Full House', 6),
+            ('Four of a Kind', 7),
+            ('Straight Flush', 8),
+            ('Royal Flush', 9)
+        ]
+
+        # Check for flush
+        suits = [card.suit for card in hand]
+        if len(set(suits)) == 1:
+            is_flush = True
+        else:
+            is_flush = False
+
+        # Check for straight
+        values = sorted([card.rank for card in hand], key=lambda x: ranks.index(x))
+        is_straight = values == list(range(min(values), max(values) + 1))
+
+        # Check for straight flush and royal flush
+        if is_flush and is_straight:
+            if values[-1] == 'A' and values[0] == 10:
+                return hand_rankings.index(('Royal Flush', 9))
+            else:
+                return hand_rankings.index(('Straight Flush', 8))
+
+        # Check for other hand rankings
+        value_counts = {value: values.count(value) for value in set(values)}
+        sorted_counts = sorted(value_counts.values(), reverse=True)
+
+        if 4 in sorted_counts:
+            return hand_rankings.index(('Four of a Kind', 7))
+        elif sorted_counts == [3, 2]:
+            return hand_rankings.index(('Full House', 6))
+        elif is_flush:
+            return hand_rankings.index(('Flush', 5))
+        elif is_straight:
+            return hand_rankings.index(('Straight', 4))
+        elif 3 in sorted_counts:
+            return hand_rankings.index(('Three of a Kind', 3))
+        elif sorted_counts == [2, 2]:
+            return hand_rankings.index(('Two Pair', 2))
+        elif 2 in sorted_counts:
+            return hand_rankings.index(('One Pair', 1))
+        else:
+            return hand_rankings.index(('High Card', 0))
+
+
+def test_PokerHandEvaluator():
+    evaluator = PokerHandEvaluator()
+
+    # Test case 1: player has a straight flush
+    player_cards = [Card(10, 'hearts'), Card(9, 'hearts')]
+    community_cards = [Card(8, 'hearts'), Card(7, 'hearts'), Card(6, 'hearts'), Card(2, 'spades'), Card(3, 'spades')]
+    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
+    print(best_hand)  # Should print the straight flush
+
+    # Test case 2: player has a pair, community cards have a flush
+    player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
+    community_cards = [Card(2, 'clubs'), Card(3, 'clubs'), Card(4, 'clubs'), Card(5, 'clubs'), Card(6, 'clubs')]
+    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
+    print(best_hand)  # Should print the flush
+
+    # Add more test cases as needed...
+
+test_PokerHandEvaluator()
+
+
+test_PokerHandEvaluator()
