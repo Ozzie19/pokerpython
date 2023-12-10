@@ -191,6 +191,7 @@ class Game:
 
 
 class PokerHandEvaluator:
+    # Define possible card ranks and hand rankings
     ranks = [str(n) for n in range(2, 11)] + list('JQKA')
     hand_rankings = [
         ('High Card', 0),
@@ -207,8 +208,11 @@ class PokerHandEvaluator:
 
     @staticmethod
     def evaluate_hand(player_cards, community_cards):
+        # Combine player's and community's cards
         all_cards = player_cards + community_cards
+        # Generate all possible combinations of 5 cards
         possible_hands = list(combinations(all_cards, 5))
+        # Find the best hand using the rank_hand method as the key for max
         best_hand = max(possible_hands, key=PokerHandEvaluator.rank_hand)
         return best_hand
 
@@ -218,17 +222,19 @@ class PokerHandEvaluator:
         values = sorted([PokerHandEvaluator.ranks.index(str(card.rank)) if not isinstance(card.rank, int) else card.rank for card in hand])
         suits = [card.suit for card in hand]
 
-        # Check for flush
+        # Check for flush (all cards have the same suit)
         is_flush = len(set(suits)) == 1
 
-        # Check for straight
+        # Check for straight (consecutive values)
         is_straight = values == list(range(min(values), max(values) + 1))
 
         # Check for straight flush and royal flush
         if is_flush and is_straight:
             if values[-1] == 'A' and values[0] == 10:
+                # Royal Flush
                 return PokerHandEvaluator.hand_rankings.index(('Royal Flush', 9))
             else:
+                # Straight Flush
                 return PokerHandEvaluator.hand_rankings.index(('Straight Flush', 8))
 
         # Check for other hand rankings
@@ -236,22 +242,29 @@ class PokerHandEvaluator:
         sorted_counts = sorted(value_counts.values(), reverse=True)
 
         if 4 in sorted_counts:
+            # Four of a Kind
             return PokerHandEvaluator.hand_rankings.index(('Four of a Kind', 7))
         elif sorted_counts == [3, 2]:
+            # Full House
             return PokerHandEvaluator.hand_rankings.index(('Full House', 6))
         elif is_flush:
+            # Flush
             return PokerHandEvaluator.hand_rankings.index(('Flush', 5))
         elif is_straight:
+            # Straight
             return PokerHandEvaluator.hand_rankings.index(('Straight', 4))
         elif 3 in sorted_counts:
+            # Three of a Kind
             return PokerHandEvaluator.hand_rankings.index(('Three of a Kind', 3))
         elif sorted_counts == [2, 2]:
+            # Two Pair
             return PokerHandEvaluator.hand_rankings.index(('Two Pair', 2))
         elif 2 in sorted_counts:
+            # One Pair
             return PokerHandEvaluator.hand_rankings.index(('One Pair', 1))
         else:
+            # High Card
             return PokerHandEvaluator.hand_rankings.index(('High Card', 0))
-
 
 
 def test_PokerHandEvaluator():
@@ -271,7 +284,7 @@ def test_PokerHandEvaluator():
 
     # Test case 3: Full House
     player_cards = [Card('A', 'hearts'), Card('A', 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card('A', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
+    community_cards = [Card(10, 'clubs'), Card('A', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(10, 'diamonds')]
     best_hand = evaluator.evaluate_hand(player_cards, community_cards)
     print("Best Hand:", best_hand)  # Should print Full House
 
@@ -283,7 +296,7 @@ def test_PokerHandEvaluator():
 
     # Test case 5: Straight
     player_cards = [Card(10, 'hearts'), Card('J', 'diamonds')]
-    community_cards = [Card('Q', 'clubs'), Card('K', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
+    community_cards = [Card('Q', 'clubs'), Card('K', 'spades'), Card('A', 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
     best_hand = evaluator.evaluate_hand(player_cards, community_cards)
     print("Best Hand:", best_hand)  # Should print Straight
 
@@ -315,8 +328,6 @@ def test_PokerHandEvaluator():
 test_PokerHandEvaluator()
 
 
-# Run the test
-test_PokerHandEvaluator()
 
 
 
