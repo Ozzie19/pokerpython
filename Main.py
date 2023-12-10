@@ -189,10 +189,9 @@ class Game:
         for player in self.players:
             player.cards = [deck.pop(), deck.pop()]
 
-
 class PokerHandEvaluator:
     # Define possible card ranks and hand rankings
-    ranks = [str(n) for n in range(2, 11)] + list('JQKA')
+    ranks = [None, None] + [str(n) for n in range(2, 11)] + list('JQKA')
     hand_rankings = [
         ('High Card', 0),
         ('One Pair', 1),
@@ -214,23 +213,31 @@ class PokerHandEvaluator:
         possible_hands = list(combinations(all_cards, 5))
         # Find the best hand using the rank_hand method as the key for max
         best_hand = max(possible_hands, key=PokerHandEvaluator.rank_hand)
-        return best_hand
+        return PokerHandEvaluator.rank_hand(best_hand)
 
     @staticmethod
     def rank_hand(hand):
         # Extract values and suits from the hand
         values = sorted([PokerHandEvaluator.ranks.index(str(card.rank)) if not isinstance(card.rank, int) else card.rank for card in hand])
         suits = [card.suit for card in hand]
-
         # Check for flush (all cards have the same suit)
         is_flush = len(set(suits)) == 1
 
-        # Check for straight (consecutive values)
+        # Check if the ranks form a sequence (straight)
         is_straight = values == list(range(min(values), max(values) + 1))
+
+        # Check for Ace-low straight (wheel)
+        is_wheel = values == [2, 3, 4, 5, 14]
+
+        # Check for 5 high straight
+        is_five_high_straight = values == [14, 2, 3, 4, 5]
+
+        # Update is_straight to include the wheel case
+        is_straight = is_straight or is_wheel or is_five_high_straight
 
         # Check for straight flush and royal flush
         if is_flush and is_straight:
-            if values[-1] == 'A' and values[0] == 10:
+            if values[-1] == 14 and values[0] == 10:
                 # Royal Flush
                 return PokerHandEvaluator.hand_rankings.index(('Royal Flush', 9))
             else:
@@ -256,7 +263,7 @@ class PokerHandEvaluator:
         elif 3 in sorted_counts:
             # Three of a Kind
             return PokerHandEvaluator.hand_rankings.index(('Three of a Kind', 3))
-        elif sorted_counts == [2, 2]:
+        elif sorted_counts == [2, 2, 1]:
             # Two Pair
             return PokerHandEvaluator.hand_rankings.index(('Two Pair', 2))
         elif 2 in sorted_counts:
@@ -267,65 +274,80 @@ class PokerHandEvaluator:
             return PokerHandEvaluator.hand_rankings.index(('High Card', 0))
 
 
+
 def test_PokerHandEvaluator():
     evaluator = PokerHandEvaluator()
 
     # Test case 1: Royal Flush
     player_cards = [Card(10, 'hearts'), Card('J', 'hearts')]
     community_cards = [Card('Q', 'hearts'), Card('K', 'hearts'), Card('A', 'hearts'), Card(2, 'spades'), Card(3, 'spades')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print the Royal Flush
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 9
 
-    # Test case 2: Four of a Kind
-    player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card(10, 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Four of a Kind
+    # Test case 2: High Card
+    player_cards = [Card(2, 'hearts'), Card(3, 'diamonds')]
+    community_cards = [Card(5, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 0
 
-    # Test case 3: Full House
-    player_cards = [Card('A', 'hearts'), Card('A', 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card('A', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(10, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Full House
+    # Test case 3: One Pair
+    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
+    community_cards = [Card(5, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 1
 
-    # Test case 4: Flush
-    player_cards = [Card(10, 'hearts'), Card('Q', 'hearts')]
-    community_cards = [Card(2, 'hearts'), Card('K', 'hearts'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Flush
+    # Test case 4: Two Pair
+    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
+    community_cards = [Card(5, 'clubs'), Card(5, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 2
 
-    # Test case 5: Straight
+    # Test case 5: Three of a Kind
+    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
+    community_cards = [Card(2, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 3
+
+    # Test case 6: Straight
     player_cards = [Card(10, 'hearts'), Card('J', 'diamonds')]
     community_cards = [Card('Q', 'clubs'), Card('K', 'spades'), Card('A', 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Straight
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 4
 
-    # Test case 6: Three of a Kind
+    # Test case 7: Flush
+    player_cards = [Card(10, 'hearts'), Card('Q', 'hearts')]
+    community_cards = [Card(2, 'hearts'), Card('K', 'hearts'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 5
+
+    # Test case 8: Full House
+    player_cards = [Card('A', 'hearts'), Card('A', 'diamonds')]
+    community_cards = [Card(10, 'clubs'), Card('A', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(10, 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 6
+
+    # Test case 9: Four of a Kind
     player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card('Q', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Three of a Kind
+    community_cards = [Card(10, 'clubs'), Card(10, 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 7
 
-    # Test case 7: Two Pair
-    player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
-    community_cards = [Card('Q', 'clubs'), Card('Q', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print Two Pair
+    # Test case 10: Straight Flush
+    player_cards = [Card(8, 'hearts'), Card('9', 'hearts')]
+    community_cards = [Card(10, 'hearts'), Card('J', 'hearts'), Card('Q', 'hearts'), Card('K', 'spades'), Card(3, 'spades')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
 
-    # Test case 8: One Pair
-    player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
-    community_cards = [Card('Q', 'clubs'), Card('K', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print One Pair
+    # Test case 11: Random Hand
+    player_cards = [Card(2, 'hearts'), Card('7', 'diamonds')]
+    community_cards = [Card(10, 'hearts'), Card('J', 'hearts'), Card('Q', 'hearts'), Card('K', 'spades'), Card(3, 'spades')]
+    # Adjust the expected result based on the specific hand
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 0
 
-    # Test case 9: High Card
-    player_cards = [Card(10, 'hearts'), Card('Q', 'diamonds')]
-    community_cards = [Card('A', 'clubs'), Card('K', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    best_hand = evaluator.evaluate_hand(player_cards, community_cards)
-    print("Best Hand:", best_hand)  # Should print High Card
+    # Test case 12: Ace-low Straight Flush
+    player_cards = [Card('A', 'hearts'), Card('2', 'hearts')]
+    community_cards = [Card('3', 'hearts'), Card('4', 'hearts'), Card('5', 'hearts'), Card('6', 'spades'), Card('7', 'spades')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
 
-# Run the test
+    # Test case 13: 5 high straight flush
+    player_cards = [Card('A', 'hearts'), Card('2', 'hearts')]
+    community_cards = [Card('3', 'hearts'), Card('4', 'hearts'), Card('5', 'hearts'), Card('6', 'spades'), Card('7', 'spades')]
+    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
+
+# Run the test cases
 test_PokerHandEvaluator()
+
+
 
 
 
