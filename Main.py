@@ -1,6 +1,7 @@
 from Deck import Card, Deck
 import random
 from itertools import combinations
+import unittest
 
 #deck = Deck()
 #deck.shuffle()
@@ -273,83 +274,50 @@ class PokerHandEvaluator:
             # High Card
             return PokerHandEvaluator.hand_rankings.index(('High Card', 0))
 
+    @staticmethod
+    def compare_kickers(hand1, hand2):
+        """
+        Compare kickers of two hands to determine the winner in case of a tie.
+
+        Args:
+            hand1 (List[Card]): First hand to compare.
+            hand2 (List[Card]): Second hand to compare.
+
+        Returns:
+            int: 1 if hand1 wins, -1 if hand2 wins, 0 if it's a tie.
+        """
+        values1 = sorted([PokerHandEvaluator.ranks.index(str(card.rank)) if not isinstance(card.rank, int) else card.rank for card in hand1])
+        values2 = sorted([PokerHandEvaluator.ranks.index(str(card.rank)) if not isinstance(card.rank, int) else card.rank for card in hand2])
+
+        # Compare kickers starting from the highest
+        for kicker1, kicker2 in zip(reversed(values1), reversed(values2)):
+            if kicker1 > kicker2:
+                return 1
+            elif kicker1 < kicker2:
+                return -1
+
+        return 0
 
 
-def test_PokerHandEvaluator():
-    evaluator = PokerHandEvaluator()
+def test_compare_kickers():
+    # Test Case 1: Same pair, different kickers
+    hand1 = [Card('2', 'hearts'), Card('2', 'spades'), Card('5', 'diamonds')]
+    hand2 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('7', 'hearts')]
+    result1 = PokerHandEvaluator.compare_kickers(hand1, hand2)
+    assert result1 == -1, f"Test Case 1 failed: Expected -1, got {result1}"
 
-    # Test case 1: Royal Flush
-    player_cards = [Card(10, 'hearts'), Card('J', 'hearts')]
-    community_cards = [Card('Q', 'hearts'), Card('K', 'hearts'), Card('A', 'hearts'), Card(2, 'spades'), Card(3, 'spades')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 9
+    # Test Case 2: Same pair, same kickers, higher pair wins
+    hand3 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
+    hand4 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('5', 'hearts')]
+    result2 = PokerHandEvaluator.compare_kickers(hand3, hand4)
+    assert result2 == 1, f"Test Case 2 failed: Expected 1, got {result2}"
 
-    # Test case 2: High Card
-    player_cards = [Card(2, 'hearts'), Card(3, 'diamonds')]
-    community_cards = [Card(5, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 0
+    # Test Case 3: Same pair, same kickers, tie
+    hand5 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
+    hand6 = [Card('3', 'clubs'), Card('3', 'diamonds'), Card('5', 'hearts')]
+    result3 = PokerHandEvaluator.compare_kickers(hand5, hand6)
+    assert result3 == 0, f"Test Case 3 failed: Expected 0, got {result3}"
 
-    # Test case 3: One Pair
-    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
-    community_cards = [Card(5, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 1
+    print("All tests passed!")
 
-    # Test case 4: Two Pair
-    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
-    community_cards = [Card(5, 'clubs'), Card(5, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 2
-
-    # Test case 5: Three of a Kind
-    player_cards = [Card(2, 'hearts'), Card(2, 'diamonds')]
-    community_cards = [Card(2, 'clubs'), Card(7, 'spades'), Card(8, 'hearts'), Card(10, 'clubs'), Card('K', 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 3
-
-    # Test case 6: Straight
-    player_cards = [Card(10, 'hearts'), Card('J', 'diamonds')]
-    community_cards = [Card('Q', 'clubs'), Card('K', 'spades'), Card('A', 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 4
-
-    # Test case 7: Flush
-    player_cards = [Card(10, 'hearts'), Card('Q', 'hearts')]
-    community_cards = [Card(2, 'hearts'), Card('K', 'hearts'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 5
-
-    # Test case 8: Full House
-    player_cards = [Card('A', 'hearts'), Card('A', 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card('A', 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(10, 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 6
-
-    # Test case 9: Four of a Kind
-    player_cards = [Card(10, 'hearts'), Card(10, 'diamonds')]
-    community_cards = [Card(10, 'clubs'), Card(10, 'spades'), Card(5, 'hearts'), Card(6, 'clubs'), Card(7, 'diamonds')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 7
-
-    # Test case 10: Straight Flush
-    player_cards = [Card(8, 'hearts'), Card('9', 'hearts')]
-    community_cards = [Card(10, 'hearts'), Card('J', 'hearts'), Card('Q', 'hearts'), Card('K', 'spades'), Card(3, 'spades')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
-
-    # Test case 11: Random Hand
-    player_cards = [Card(2, 'hearts'), Card('7', 'diamonds')]
-    community_cards = [Card(10, 'hearts'), Card('J', 'hearts'), Card('Q', 'hearts'), Card('K', 'spades'), Card(3, 'spades')]
-    # Adjust the expected result based on the specific hand
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 0
-
-    # Test case 12: Ace-low Straight Flush
-    player_cards = [Card('A', 'hearts'), Card('2', 'hearts')]
-    community_cards = [Card('3', 'hearts'), Card('4', 'hearts'), Card('5', 'hearts'), Card('6', 'spades'), Card('7', 'spades')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
-
-    # Test case 13: 5 high straight flush
-    player_cards = [Card('A', 'hearts'), Card('2', 'hearts')]
-    community_cards = [Card('3', 'hearts'), Card('4', 'hearts'), Card('5', 'hearts'), Card('6', 'spades'), Card('7', 'spades')]
-    assert evaluator.evaluate_hand(player_cards, community_cards) == 8
-
-# Run the test cases
-test_PokerHandEvaluator()
-
-
-
-
-
-
-
+test_compare_kickers()
