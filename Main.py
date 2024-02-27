@@ -338,7 +338,7 @@ def test_end_round():
     result3 = round3.end_round(community_cards)
     assert result3 == [round3.players[2]], f"Test Case 3 failed: Expected [Player3], got {result3}"
 
-    # Test Case 2: Player 2 wins with a pair
+    # Test Case 4: Player 2 wins with a pair
     round4 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
     round4.players[0].cards = [Card('Q', 'hearts'), Card('J', 'diamonds')]
     round4.players[1].cards = [Card('Q', 'spades'), Card('J', 'clubs')]
