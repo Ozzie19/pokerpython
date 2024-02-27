@@ -145,16 +145,30 @@ class BettingRound:
         print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
 
     # The end_round method ends the current betting round.
-    def end_round(self):
+    def end_round(self, community_cards):
         # Reset the current bet to 0.
         self.current_bet = 0
         # Store the current pot in a variable.
         pot_to_distribute = self.pot
         # Reset the pot to 0.
         self.pot = 0
-        # Return the pot to be distributed to the winning player(s).
-        return pot_to_distribute
-        round.distribute_pot(winners, pot_to_distribute)
+
+        # Collect all player hands, including community cards
+        all_hands = [player.cards + community_cards for player in self.players]
+
+        # Find the best hand using the rank_hand method as the key for max
+        best_hand = max(all_hands, key=PokerHandEvaluator.rank_hand)
+
+        # Check for tie and compare kickers if needed
+        winners = [player for player in self.players if PokerHandEvaluator.rank_hand(player.cards + community_cards) == PokerHandEvaluator.rank_hand(best_hand)]
+
+        if len(winners) > 1:
+            # It's a tie, compare kickers
+            tie_winner = max(winners, key=lambda player: PokerHandEvaluator.compare_kickers(player.cards + community_cards, best_hand))
+            winners = [tie_winner]
+
+        # Ensure the method always returns the list of winners
+        return winners
     
     def distribute_pot(self, winners, pot_to_distribute):
         # Divide the pot evenly among the winners
@@ -298,26 +312,38 @@ class PokerHandEvaluator:
 
         return 0
 
+def test_end_round():
+    # Test Case 1: One player wins with a high card
+    round1 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
+    round1.players[0].cards = [Card('A', 'hearts'), Card('8', 'diamonds')]
+    round1.players[1].cards = [Card('K', 'spades'), Card('2', 'clubs')]
+    community_cards = [Card('10', 'hearts'), Card('7', 'spades'), Card('5', 'diamonds')]
+    result1 = round1.end_round(community_cards)
+    assert result1 == [round1.players[0]], f"Test Case 1 failed: Expected [Player1], got {result1}"
 
-def test_compare_kickers():
-    # Test Case 1: Same pair, different kickers
-    hand1 = [Card('2', 'hearts'), Card('2', 'spades'), Card('5', 'diamonds')]
-    hand2 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('7', 'hearts')]
-    result1 = PokerHandEvaluator.compare_kickers(hand1, hand2)
-    assert result1 == -1, f"Test Case 1 failed: Expected -1, got {result1}"
+    # Test Case 2: Player 2 wins with a pair
+    round2 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
+    round2.players[0].cards = [Card('K', 'hearts'), Card('J', 'diamonds')]
+    round2.players[1].cards = [Card('Q', 'spades'), Card('10', 'clubs')]
+    community_cards = [Card('10', 'hearts'), Card('9', 'spades'), Card('8', 'diamonds')]
+    result2 = round2.end_round(community_cards)
+    assert result2 == [round2.players[1]], f"Test Case 2 failed: Expected [Player2], got {result2}"
 
-    # Test Case 2: Same pair, same kickers, higher pair wins
-    hand3 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
-    hand4 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('5', 'hearts')]
-    result2 = PokerHandEvaluator.compare_kickers(hand3, hand4)
-    assert result2 == 1, f"Test Case 2 failed: Expected 1, got {result2}"
+    # Test Case 3: Three players tie with the same hand, resolved by kicker
+    round3 = BettingRound([Player("Player1", 100), Player("Player2", 100), Player("Player3", 100)])
+    round3.players[0].cards = [Card('9', 'hearts'), Card('9', 'diamonds')]
+    round3.players[1].cards = [Card('9', 'spades'), Card('9', 'clubs')]
+    round3.players[2].cards = [Card('10', 'spades'), Card('10', 'clubs')]
+    community_cards = [Card('8', 'hearts'), Card('7', 'spades'), Card('6', 'diamonds')]
+    result3 = round3.end_round(community_cards)
+    assert result3 == [round3.players[2]], f"Test Case 3 failed: Expected [Player3], got {result3}"
 
-    # Test Case 3: Same pair, same kickers, tie
-    hand5 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
-    hand6 = [Card('3', 'clubs'), Card('3', 'diamonds'), Card('5', 'hearts')]
-    result3 = PokerHandEvaluator.compare_kickers(hand5, hand6)
-    assert result3 == 0, f"Test Case 3 failed: Expected 0, got {result3}"
+    # Test Case 2: Player 2 wins with a pair
+    round4 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
+    round4.players[0].cards = [Card('Q', 'hearts'), Card('J', 'diamonds')]
+    round4.players[1].cards = [Card('Q', 'spades'), Card('J', 'clubs')]
+    community_cards = [Card('10', 'hearts'), Card('9', 'spades'), Card('8', 'diamonds')]
+    result4 = round4.end_round(community_cards)
+    assert result4 == [round4.players[1]], f"Test Case 4 failed: Expected [Player1, Player2], got {result4}"
 
-    print("All tests passed!")
-
-test_compare_kickers()
+test_end_round()

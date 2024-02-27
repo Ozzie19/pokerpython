@@ -103,3 +103,24 @@ def test_PokerHandEvaluator():
     player_cards = [Card('A', 'hearts'), Card('2', 'hearts')]
     community_cards = [Card('3', 'hearts'), Card('4', 'hearts'), Card('5', 'hearts'), Card('6', 'spades'), Card('7', 'spades')]
     assert evaluator.evaluate_hand(player_cards, community_cards) == 8
+
+def test_compare_kickers():
+    # Test Case 1: Same pair, different kickers
+    hand1 = [Card('2', 'hearts'), Card('2', 'spades'), Card('5', 'diamonds')]
+    hand2 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('7', 'hearts')]
+    result1 = PokerHandEvaluator.compare_kickers(hand1, hand2)
+    assert result1 == -1, f"Test Case 1 failed: Expected -1, got {result1}"
+
+    # Test Case 2: Same pair, same kickers, higher pair wins
+    hand3 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
+    hand4 = [Card('2', 'clubs'), Card('2', 'diamonds'), Card('5', 'hearts')]
+    result2 = PokerHandEvaluator.compare_kickers(hand3, hand4)
+    assert result2 == 1, f"Test Case 2 failed: Expected 1, got {result2}"
+
+    # Test Case 3: Same pair, same kickers, tie
+    hand5 = [Card('3', 'hearts'), Card('3', 'spades'), Card('5', 'diamonds')]
+    hand6 = [Card('3', 'clubs'), Card('3', 'diamonds'), Card('5', 'hearts')]
+    result3 = PokerHandEvaluator.compare_kickers(hand5, hand6)
+    assert result3 == 0, f"Test Case 3 failed: Expected 0, got {result3}"
+
+    print("All tests passed!")
