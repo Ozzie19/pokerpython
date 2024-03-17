@@ -9,13 +9,15 @@ import unittest
 #print(card)
 
 #requires updating for asynchronous programming
-# The Player class represents a player in the game.
+# The Player class represents a player in the game.ch
 class Player:
     # Each player has a name and a number of chips.
     def __init__(self, name, chips):
         self.name = name
         self.chips = chips
         self.current_bet = 0  # The current bet is initially set to 0.
+        #self.sBlind = sBlind
+        #self.bBlind = bBlind
 
     # The check method represents the action of checking in poker.
     def check(self):
@@ -66,83 +68,105 @@ class BettingRound:
         self.pot = 0  # The pot is initially set to 0.
         self.current_bet = 0  # The current bet is initially set to 0.
         self.players = players  # The players participating in the betting round.
+        self.showdown_agreed = False  # The showdown agreed flag is initially set to False.
+        self.acted_players = set()  # The set of players who have acted this round is initially empty.
 
     # The play_round method allows each player to take an action.
     def play_round(self):
-        for player in self.players:  # For each player in the list of players...
-            pass  # (This method is not yet implemented.)
+        # Initialize a list to keep track of players who need to act this round.
+        players_to_act = self.players.copy()
 
-    # The handle_check method handles a player checking.
+        # While there are players who still haven't acted or need to react to a bet/raise...
+        while len(players_to_act) > 0:
+            player = players_to_act.pop(0)  # Get the first player in the list
+
+            # Print the current bet and the player's chips
+            print(f'Pot: {self.pot}')
+            print(f'Current bet: {self.current_bet}')
+            print(f'{player.name} has {player.chips} chips left.')
+
+            # Determine the player's action
+            action = input(f'{player.name}, enter your action (check, bet, call, raise, or fold): ').lower()
+
+            # Handle the player's action
+            bet_amount = raise_amount = 0
+            if action == 'bet' or action == 'raise':
+                bet_amount = raise_amount = int(input(f'{player.name}, enter the amount: '))
+
+            if action == 'check':
+                self.handle_check(player)
+            elif action == 'bet':
+                if self.handle_bet(player, bet_amount):
+                    players_to_act = self.players.copy()  # All players need to react to the bet
+                    players_to_act.remove(player)  # Except for the player who has just acted
+            elif action == 'call':
+                self.handle_call(player)
+            elif action == 'raise':
+                if self.handle_raise(player, raise_amount):
+                    players_to_act = self.players.copy()  # All players need to react to the raise
+                    players_to_act.remove(player)  # Except for the player who has just acted
+            elif action == 'fold':
+                self.handle_fold(player)
+            else:
+                print(f'Invalid action: {action}')
+                players_to_act.insert(0, player)  # Give player another chance for a valid action.
+
+        print('End of betting round.')
+
+   # The handle_check method handles a player checking.
     def handle_check(self, player):
-        # Print a message indicating the player's action.
-        print(f'{player.name} checks.')
-        # Print the current state of the pot and the player's chips.
-        print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+        if self.current_bet == 0:  # Check if there are no other bets on the table
+            print(f'{player.name} checks.')
+        else:
+            print(f'{player.name} cannot check because there is a bet on the table.')
+            return False
+        return True
 
     # The handle_bet method handles a player betting a certain amount.
     def handle_bet(self, player, amount):
-        # If the player can make the bet...
-        if player.bet(amount):
-            # Add the bet amount to the pot and set the current bet to the bet amount.
-            self.pot += amount
-            self.current_bet = amount
-            # Print a message indicating the player's action.
-            print(f'{player.name} bets {amount}.')
-            # Print the current state of the pot and the player's chips.
-            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
-            return True
+        if self.current_bet == 0:  # Check if there are no other bets on the table
+            if amount <= player.chips:  # Check if the player has enough chips.
+                player.bet(amount)
+                self.pot += amount
+                self.current_bet = amount
+                print(f'{player.name} bets {amount}.')
+            else:
+                print(f'{player.name} does not have enough chips to bet.')
+                return False
         else:
-            # If the player cannot make the bet, print a message indicating the invalid action.
-            print(f'{player.name} tried to bet {amount}, but the bet was invalid.')
-            # Print the player's remaining chips.
-            print(f'{player.name} has {player.chips} chips left.')
+            print(f'{player.name} cannot bet because there is already a bet on the table.')
             return False
+        return True
 
     # The handle_call method handles a player calling the current bet.
     def handle_call(self, player):
-        # If the player can make the call...
-        if player.call(self.current_bet):
-            # Add the current bet to the pot.
+        if player.chips >= self.current_bet:  # Check if the player has enough chips to call
+            player.call(self.current_bet)
             self.pot += self.current_bet
-            # Print a message indicating the player's action.
             print(f'{player.name} calls.')
-            # Print the current state of the pot and the player's chips.
-            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
-            return True
         else:
-            # If the player cannot make the call, print a message indicating the invalid action.
-            print(f'{player.name} tried to call, but the call was invalid.')
-            # Print the player's remaining chips.
-            print(f'{player.name} has {player.chips} chips left.')
-            return False
+            print(f'{player.name} does not have enough chips to call. {player.name} folds')
+            self.handle_fold(player)
+        return True
 
     # The handle_raise method handles a player raising the current bet.
     def handle_raise(self, player, amount):
-        # If the player can make the raise...
-        if player.raise_bet(amount):
-            # Add the player's current bet to the pot and set the current bet to the player's current bet.
+        if player.chips >= (self.current_bet + amount):
+            player.current_bet = self.current_bet
+            player.raise_bet(amount)
             self.pot += player.current_bet
             self.current_bet = player.current_bet
-            # Print a message indicating the player's action.
             print(f'{player.name} raises to {player.current_bet}.')
-            # Print the current state of the pot and the player's chips.
-            print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
-            return True
         else:
-            # If the player cannot make the raise, print a message indicating the invalid action.
-            print(f'{player.name} tried to raise to {player.current_bet + amount}, but the raise was invalid.')
-            # Print the player's remaining chips.
-            print(f'{player.name} has {player.chips} chips left.')
-            return False
+            print(f'{player.name} does not have enough chips to raise. {player.name} folds')
+            self.handle_fold(player)
+        return True
 
     # The handle_fold method handles a player folding.
     def handle_fold(self, player):
-        # The player folds.
         player.fold()
-        # Print a message indicating the player's action.
         print(f'{player.name} folds.')
-        # Print the current state of the pot and the player's chips.
-        print(f'Pot is now {self.pot}. {player.name} has {player.chips} chips left.')
+
 
     # The end_round method ends the current betting round.
     def end_round(self, community_cards):
@@ -203,6 +227,70 @@ class Game:
         # Deal two cards to each player
         for player in self.players:
             player.cards = [deck.pop(), deck.pop()]
+
+    
+    def deal_flop(self, deck):
+        # Burn one card
+        deck.pop()
+
+        # Deal three cards for the flop
+        flop = [deck.pop() for _ in range(3)]
+
+        return flop
+
+    def deal_turn(self, deck):
+        # Burn one card
+        deck.pop()
+
+        # Deal one card for the turn
+        turn = deck.pop()
+
+        return turn
+
+    def deal_river(self, deck):
+        # Burn one card
+        deck.pop()
+
+        # Deal one card for the river
+        river = deck.pop()
+
+        return river
+    
+    def play_round(self, dealer_index):
+        # Start with the player to the left of the dealer and go clockwise
+        current_player_index = (dealer_index + 1) % len(self.players)
+
+        # Deal initial cards
+        deck = Deck()
+        random.shuffle(deck)
+        for player in self.players:
+            player.cards = [deck.pop(), deck.pop()]
+
+        # Deal the flop
+        flop = self.deal_flop(deck)
+        print("Flop:", flop)
+        self.community_cards.extend(flop)
+
+        # Allow each player to take actions
+        while True:
+            player = self.players[current_player_index]
+            print("\n{}'s Turn:".format(player.name))
+
+            # Let the player take an action (check, bet, fold, etc.)
+            # For simplicity, let's assume players always choose to check in this implementation
+            self.handle_check(player)
+
+            # Move to the next player
+            current_player_index = (current_player_index + 1) % len(self.players)
+
+            # If all players have checked, move to the next round or end the round
+            if current_player_index == dealer_index:
+                print("End of pre-flop betting round.")
+                break
+
+        # End of pre-flop betting round
+        print("End of pre-flop betting round.")
+
 
 class PokerHandEvaluator:
     # Define possible card ranks and hand rankings
@@ -313,3 +401,7 @@ class PokerHandEvaluator:
         return 0
 
 
+if __name__ == '__main__':
+    players = [Player('Alice', 100), Player('Bob', 100), Player('Charlie', 100)]
+    betting_round = BettingRound(players)
+    betting_round.play_round()
