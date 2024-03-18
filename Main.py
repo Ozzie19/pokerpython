@@ -71,10 +71,13 @@ class BettingRound:
         self.showdown_agreed = False  # The showdown agreed flag is initially set to False.
         self.acted_players = set()  # The set of players who have acted this round is initially empty.
 
-    # The play_round method allows each player to take an action.
     def play_round(self):
         # Initialize a list to keep track of players who need to act this round.
         players_to_act = self.players.copy()
+
+        # Initialize a list to keep track of active players. 
+        # When a player folds, they are removed from active_players and won't be considered in subsequent rounds.
+        active_players = self.players.copy()
 
         # While there are players who still haven't acted or need to react to a bet/raise...
         while len(players_to_act) > 0:
@@ -97,16 +100,17 @@ class BettingRound:
                 self.handle_check(player)
             elif action == 'bet':
                 if self.handle_bet(player, bet_amount):
-                    players_to_act = self.players.copy()  # All players need to react to the bet
+                    players_to_act = active_players.copy()  # All active players need to react to the bet
                     players_to_act.remove(player)  # Except for the player who has just acted
             elif action == 'call':
                 self.handle_call(player)
             elif action == 'raise':
                 if self.handle_raise(player, raise_amount):
-                    players_to_act = self.players.copy()  # All players need to react to the raise
-                    players_to_act.remove(player)  # Except for the player who has just acted
+                    players_to_act = active_players.copy()  # All active players need to react to the raise
+                    players_to_act.remove(player)  # Except for the player who has just actebetd
             elif action == 'fold':
                 self.handle_fold(player)
+                active_players.remove(player)  # Remove this player from active players
             else:
                 print(f'Invalid action: {action}')
                 players_to_act.insert(0, player)  # Give player another chance for a valid action.
