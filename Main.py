@@ -209,6 +209,9 @@ class Game:
     def __init__(self):
         self.players = []
         self.current_round = None
+        self.deck = Deck()  # Initialize the deck here
+        self.deck.shuffle() # Shuffle the deck
+
 
     def add_player(self, name, chips):
         player = Player(name, chips)
@@ -222,11 +225,7 @@ class Game:
             self.add_player(name, chips)
 
     def deal_initial_cards(self):
-        # Create a deck of cards
-        deck = Deck() # assuming 1-52 represents a standard deck of cards
-
-        # Shuffle the deck
-        random.shuffle(deck)
+        deck = self.deck
 
         # Deal two cards to each player
         for player in self.players:
@@ -265,7 +264,6 @@ class Game:
         current_player_index = (dealer_index + 1) % len(self.players)
 
         # Deal initial cards
-        deck = Deck()
         random.shuffle(deck)
         for player in self.players:
             player.cards = [deck.pop(), deck.pop()]
@@ -405,7 +403,38 @@ class PokerHandEvaluator:
         return 0
 
 
-if __name__ == '__main__':
-    players = [Player('Alice', 100), Player('Bob', 100), Player('Charlie', 100)]
-    betting_round = BettingRound(players)
-    betting_round.play_round()
+def test_deal_initial_cards():
+    game = Game()
+    game.deal_initial_cards()
+    for player in game.players:
+        assert len(player.cards) == 2, "Each player should have 2 cards"
+
+def test_deal_flop():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    flop = game.deal_flop(deck)
+    assert len(flop) == 3, "Flop should have 3 cards"
+    assert len(deck) == initial_deck_length - 4, "Deck should have 4 less cards"
+
+def test_deal_turn():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    turn = game.deal_turn(deck)
+    assert turn is not None, "Turn should have a card"
+    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
+
+def test_deal_river():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    river = game.deal_river(deck)
+    assert river is not None, "River should have a card"
+    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
+
+# Run the tests
+test_deal_initial_cards()
+test_deal_flop()
+test_deal_turn()
+test_deal_river()

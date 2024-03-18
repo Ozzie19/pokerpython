@@ -32,3 +32,11 @@ class Deck:
     # Deal (remove and return) the top card from the deck
     def deal(self):
         return self.cards.pop()
+    
+    #Burn a card
+    def pop(self):
+        return self.cards.pop()
+    
+    # Return the number of cards left in the deck
+    def __len__(self):
+        return len(self.cards)

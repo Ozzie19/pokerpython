@@ -158,3 +158,9 @@ def test_end_round():
     community_cards = [Card('10', 'hearts'), Card('9', 'spades'), Card('8', 'diamonds')]
     result4 = round4.end_round(community_cards)
     assert result4 == [round4.players[1]], f"Test Case 4 failed: Expected [Player1, Player2], got {result4}"
+
+
+if __name__ == '__main__':
+    players = [Player('Alice', 100), Player('Bob', 100), Player('Charlie', 100)]
+    betting_round = BettingRound(players)
+    betting_round.play_round()
