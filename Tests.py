@@ -164,3 +164,39 @@ if __name__ == '__main__':
     players = [Player('Alice', 100), Player('Bob', 100), Player('Charlie', 100)]
     betting_round = BettingRound(players)
     betting_round.play_round()
+
+def test_deal_initial_cards():
+    game = Game()
+    game.deal_initial_cards()
+    for player in game.players:
+        assert len(player.cards) == 2, "Each player should have 2 cards"
+
+def test_deal_flop():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    flop = game.deal_flop(deck)
+    assert len(flop) == 3, "Flop should have 3 cards"
+    assert len(deck) == initial_deck_length - 4, "Deck should have 4 less cards"
+
+def test_deal_turn():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    turn = game.deal_turn(deck)
+    assert turn is not None, "Turn should have a card"
+    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
+
+def test_deal_river():
+    game = Game()
+    deck = game.deck
+    initial_deck_length = len(deck)
+    river = game.deal_river(deck)
+    assert river is not None, "River should have a card"
+    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
+
+# Run the tests
+test_deal_initial_cards()
+test_deal_flop()
+test_deal_turn()
+test_deal_river()

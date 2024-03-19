@@ -72,6 +72,9 @@ class BettingRound:
         self.acted_players = set()  # The set of players who have acted this round is initially empty.
 
     def play_round(self):
+        # Reset the current bet to 0 at the start of the round
+        self.current_bet = 0
+        
         # Initialize a list to keep track of players who need to act this round.
         players_to_act = self.players.copy()
 
@@ -111,6 +114,8 @@ class BettingRound:
             elif action == 'fold':
                 self.handle_fold(player)
                 active_players.remove(player)  # Remove this player from active players
+                if len(active_players) == 1:
+                    break  # Break the loop if only one active player remains
             else:
                 print(f'Invalid action: {action}')
                 players_to_act.insert(0, player)  # Give player another chance for a valid action.
@@ -196,7 +201,8 @@ class BettingRound:
             winners = [tie_winner]
 
         # Ensure the method always returns the list of winners
-        return winners
+        return winners, pot_to_distribute
+    
     
     def distribute_pot(self, winners, pot_to_distribute):
         # Divide the pot evenly among the winners
@@ -207,10 +213,11 @@ class BettingRound:
 
 class Game:
     def __init__(self):
-        self.players = []
-        self.current_round = None
-        self.deck = Deck()  # Initialize the deck here
-        self.deck.shuffle() # Shuffle the deck
+        self.players = []  # The players in the game
+        self.dealer_index = 0  # Set the dealer to be the first player initially
+        self.deck = Deck()     # Initialize a new deck of cards
+        self.community_cards = []  # Initialize community cards
+        self.betting_round = None  # There is no betting round happening initially
 
 
     def add_player(self, name, chips):
@@ -223,6 +230,15 @@ class Game:
         for i in range(num_players):
             name = input(f"Enter the name of player {i+1}: ")
             self.add_player(name, chips)
+        
+        while True:
+            # play a round
+            self.play_round()
+
+            # Ask the players if they'd like to play another round
+            play_again = input('Would you like to play another round? (yes/no):')
+            if play_again.lower() != 'yes':
+                break
 
     def deal_initial_cards(self):
         deck = self.deck
@@ -259,39 +275,57 @@ class Game:
 
         return river
     
-    def play_round(self, dealer_index):
-        # Start with the player to the left of the dealer and go clockwise
-        current_player_index = (dealer_index + 1) % len(self.players)
+    def play_round(self):
+        # Determine the dealer (it rotates every round)
+        dealer = self.players[self.dealer_index]
+        print(f'Dealer is {dealer.name}')
 
-        # Deal initial cards
-        random.shuffle(deck)
+        # Initialize a new deck of cards and shuffle it
+        self.deck = Deck()
+        self.deck.shuffle()
+
+        # Deal two hidden cards to each player
         for player in self.players:
-            player.cards = [deck.pop(), deck.pop()]
+            player.cards = [self.deck.deal() for _ in range(2)]
+            print(f'{player.name} has been dealt their cards: {player.cards}')
+            # TODO: Remove this print statement when a GUI is added
 
-        # Deal the flop
-        flop = self.deal_flop(deck)
-        print("Flop:", flop)
-        self.community_cards.extend(flop)
+        # Initialize a single instance of BettingRound for the entire hand
+        self.betting_round = BettingRound(self.players)
 
-        # Allow each player to take actions
-        while True:
-            player = self.players[current_player_index]
-            print("\n{}'s Turn:".format(player.name))
+        # The pre-flop betting round. Afterward, a round of betting takes place.
+        self.betting_round.play_round()
 
-            # Let the player take an action (check, bet, fold, etc.)
-            # For simplicity, let's assume players always choose to check in this implementation
-            self.handle_check(player)
+        # The flop is dealt. Then, display the community cards to the players.
+        self.community_cards = [self.deck.deal() for _ in range(3)]
+        print('The flop: ', self.community_cards)
 
-            # Move to the next player
-            current_player_index = (current_player_index + 1) % len(self.players)
+        # Another round of betting takes place.
+        self.betting_round.play_round()
 
-            # If all players have checked, move to the next round or end the round
-            if current_player_index == dealer_index:
-                print("End of pre-flop betting round.")
-                break
+        # The turn card is dealt. Show the community cards to the players.
+        self.community_cards.append(self.deck.deal()) 
+        print('The board after the turn: ', self.community_cards)
 
-        # End of pre-flop betting round
-        print("End of pre-flop betting round.")
+        # Another round of betting takes place.
+        self.betting_round.play_round()
+
+        # The river card is dealt. Show the community cards to the players.
+        self.community_cards.append(self.deck.deal()) 
+        print('The board after the river: ', self.community_cards)
+
+        # The final round of betting takes place.
+        self.betting_round.play_round()
+
+        # The end-round method is then used to end the round of poker
+        winners, pot_to_distribute = self.betting_round.end_round(self.community_cards)
+        
+        # Distribute pot to the determined winner
+        self.betting_round.distribute_pot(winners, pot_to_distribute)
+
+        # Move the dealer button to the next player
+        self.dealer_index = (self.dealer_index + 1) % len(self.players)
+
 
 
 class PokerHandEvaluator:
@@ -403,38 +437,9 @@ class PokerHandEvaluator:
         return 0
 
 
-def test_deal_initial_cards():
-    game = Game()
-    game.deal_initial_cards()
-    for player in game.players:
-        assert len(player.cards) == 2, "Each player should have 2 cards"
 
-def test_deal_flop():
-    game = Game()
-    deck = game.deck
-    initial_deck_length = len(deck)
-    flop = game.deal_flop(deck)
-    assert len(flop) == 3, "Flop should have 3 cards"
-    assert len(deck) == initial_deck_length - 4, "Deck should have 4 less cards"
+# Initiate a game with the list of players 
+game = Game()
 
-def test_deal_turn():
-    game = Game()
-    deck = game.deck
-    initial_deck_length = len(deck)
-    turn = game.deal_turn(deck)
-    assert turn is not None, "Turn should have a card"
-    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
-
-def test_deal_river():
-    game = Game()
-    deck = game.deck
-    initial_deck_length = len(deck)
-    river = game.deal_river(deck)
-    assert river is not None, "River should have a card"
-    assert len(deck) == initial_deck_length - 2, "Deck should have 2 less cards"
-
-# Run the tests
-test_deal_initial_cards()
-test_deal_flop()
-test_deal_turn()
-test_deal_river()
+# Start the game
+game.start_game()
