@@ -466,35 +466,7 @@ class PokerHandEvaluator:
 
 
 # Initiate a game with the list of players 
-#game = Game()
+game = Game()
 
 # Start the game
-#game.start_game()
-    
-def test_end_round():
-    # Test Case 1: One player wins with a high card
-    round1 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
-    round1.players[0].cards = [Card('A', 'hearts'), Card('8', 'diamonds')]
-    round1.players[1].cards = [Card('K', 'spades'), Card('2', 'clubs')]
-    community_cards = [Card('10', 'hearts'), Card('7', 'spades'), Card('5', 'diamonds')]
-    result1 = round1.end_round(community_cards)
-    print (result1)
-
-    # Test Case 2: Player 2 wins with a pair
-    round2 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
-    round2.players[0].cards = [Card('K', 'hearts'), Card('J', 'diamonds')]
-    round2.players[1].cards = [Card('Q', 'spades'), Card('10', 'clubs')]
-    community_cards = [Card('10', 'hearts'), Card('9', 'spades'), Card('8', 'diamonds')]
-    result2 = round2.end_round(community_cards)
-    print (result2)
-
-    # Test Case 3: Three players tie with the same hand, resolved by kicker
-    round3 = BettingRound([Player("Player1", 100), Player("Player2", 100), Player("Player3", 100)])
-    round3.players[0].cards = [Card('9', 'hearts'), Card('9', 'diamonds')]
-    round3.players[1].cards = [Card('9', 'spades'), Card('9', 'clubs')]
-    round3.players[2].cards = [Card('10', 'spades'), Card('10', 'clubs')]
-    community_cards = [Card('8', 'hearts'), Card('7', 'spades'), Card('6', 'diamonds')]
-    result3 = round3.end_round(community_cards)
-    print (result3)
-
-test_end_round() 
+game.start_game()
