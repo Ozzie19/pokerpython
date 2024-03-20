@@ -68,23 +68,28 @@ class BettingRound:
         self.pot = 0  # The pot is initially set to 0.
         self.current_bet = 0  # The current bet is initially set to 0.
         self.players = players  # The players participating in the betting round.
-        self.showdown_agreed = False  # The showdown agreed flag is initially set to False.
+        #self.showdown_agreed = False  # The showdown agreed flag is initially set to False.
         self.acted_players = set()  # The set of players who have acted this round is initially empty.
 
+        # Set active flag for all players to True initially
+        for player in self.players:
+            player.active = True
+
     def play_round(self):
+
         # Reset the current bet to 0 at the start of the round
         self.current_bet = 0
-        
+
         # Initialize a list to keep track of players who need to act this round.
-        players_to_act = self.players.copy()
+        players_to_act = [player for player in self.players if player.active]
 
         # Initialize a list to keep track of active players. 
         # When a player folds, they are removed from active_players and won't be considered in subsequent rounds.
-        active_players = self.players.copy()
+        active_players = players_to_act.copy()
 
-        # While there are players who still haven't acted or need to react to a bet/raise...
+        # While there are active players who still haven't acted or need to react to a bet/raise...
         while len(players_to_act) > 0:
-            player = players_to_act.pop(0)  # Get the first player in the list
+            player = players_to_act.pop(0)  # Get the first active player in the list
 
             # Print the current bet and the player's chips
             print(f'Pot: {self.pot}')
@@ -110,12 +115,10 @@ class BettingRound:
             elif action == 'raise':
                 if self.handle_raise(player, raise_amount):
                     players_to_act = active_players.copy()  # All active players need to react to the raise
-                    players_to_act.remove(player)  # Except for the player who has just actebetd
+                    players_to_act.remove(player)  # Except for the player who has just acted
             elif action == 'fold':
                 self.handle_fold(player)
                 active_players.remove(player)  # Remove this player from active players
-                if len(active_players) == 1:
-                    break  # Break the loop if only one active player remains
             else:
                 print(f'Invalid action: {action}')
                 players_to_act.insert(0, player)  # Give player another chance for a valid action.
@@ -174,6 +177,7 @@ class BettingRound:
     # The handle_fold method handles a player folding.
     def handle_fold(self, player):
         player.fold()
+        player.active = False  # Set active flag to False for the folded player
         print(f'{player.name} folds.')
 
 
@@ -190,10 +194,25 @@ class BettingRound:
         all_hands = [player.cards + community_cards for player in self.players]
 
         # Find the best hand using the rank_hand method as the key for max
-        best_hand = max(all_hands, key=PokerHandEvaluator.rank_hand)
+        # Find the maximum hand rank
+        max_rank = PokerHandEvaluator.rank_hand(max(all_hands, key=PokerHandEvaluator.rank_hand))
 
-        # Check for tie and compare kickers if needed
-        winners = [player for player in self.players if PokerHandEvaluator.rank_hand(player.cards + community_cards) == PokerHandEvaluator.rank_hand(best_hand)]
+        # Find all hands with the maximum rank
+        max_hands = [hand for hand in all_hands if PokerHandEvaluator.rank_hand(hand) == max_rank]
+
+        # If there's only one hand with the maximum rank, it's the best hand
+        if len(max_hands) == 1:
+            best_hand = max_hands[0]
+        else:
+            # If there are multiple hands with the maximum rank, use compare_kickers to find the best hand
+            best_hand = PokerHandEvaluator.find_best_hand(max_hands)
+
+        #Winners
+        winners = [player for player in self.players if (player.cards + community_cards) == best_hand]
+
+        # Print the winners
+        for winner in winners:
+            print(f'{winner.name} is a winner!')
 
         if len(winners) > 1:
             # It's a tie, compare kickers
@@ -210,6 +229,8 @@ class BettingRound:
         for player in winners:
             # Add the share to each winner's chips
             player.chips += share
+            # Print the winner's name and their new chip count
+            print(f'{player.name} now has {player.chips} chips.')
 
 class Game:
     def __init__(self):
@@ -436,10 +457,44 @@ class PokerHandEvaluator:
 
         return 0
 
+    def find_best_hand(hands):
+        best_hand = hands[0]
+        for hand in hands[1:]:
+            if PokerHandEvaluator.compare_kickers(best_hand, hand) < 0:
+                best_hand = hand
+        return best_hand
 
 
 # Initiate a game with the list of players 
-game = Game()
+#game = Game()
 
 # Start the game
-game.start_game()
+#game.start_game()
+    
+def test_end_round():
+    # Test Case 1: One player wins with a high card
+    round1 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
+    round1.players[0].cards = [Card('A', 'hearts'), Card('8', 'diamonds')]
+    round1.players[1].cards = [Card('K', 'spades'), Card('2', 'clubs')]
+    community_cards = [Card('10', 'hearts'), Card('7', 'spades'), Card('5', 'diamonds')]
+    result1 = round1.end_round(community_cards)
+    print (result1)
+
+    # Test Case 2: Player 2 wins with a pair
+    round2 = BettingRound([Player("Player1", 100), Player("Player2", 100)])
+    round2.players[0].cards = [Card('K', 'hearts'), Card('J', 'diamonds')]
+    round2.players[1].cards = [Card('Q', 'spades'), Card('10', 'clubs')]
+    community_cards = [Card('10', 'hearts'), Card('9', 'spades'), Card('8', 'diamonds')]
+    result2 = round2.end_round(community_cards)
+    print (result2)
+
+    # Test Case 3: Three players tie with the same hand, resolved by kicker
+    round3 = BettingRound([Player("Player1", 100), Player("Player2", 100), Player("Player3", 100)])
+    round3.players[0].cards = [Card('9', 'hearts'), Card('9', 'diamonds')]
+    round3.players[1].cards = [Card('9', 'spades'), Card('9', 'clubs')]
+    round3.players[2].cards = [Card('10', 'spades'), Card('10', 'clubs')]
+    community_cards = [Card('8', 'hearts'), Card('7', 'spades'), Card('6', 'diamonds')]
+    result3 = round3.end_round(community_cards)
+    print (result3)
+
+test_end_round() 
