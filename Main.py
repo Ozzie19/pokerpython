@@ -3,6 +3,7 @@ import random
 from itertools import combinations
 import tkinter as tk # required for GUI
 from tkinter import messagebox
+import os
 
 #deck = Deck()
 #deck.shuffle()
@@ -558,10 +559,100 @@ class GameSetupScreen:
         game = Game()
         game.start_game(num_players, starting_chips, player_names)
 
+from PIL import Image, ImageTk  # Import Image and ImageTk from PIL module
+
+class MainScreen:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Poker Game")
+        self.root.attributes("-fullscreen", True)
+
+        # Load card images
+        self.load_card_images()
+
+        # Display card images
+        self.display_card_images()
+
+    def load_card_images(self):
+        # Dictionary to store the paths to card images
+        self.card_images = {}
+
+        # Directory containing the card images
+        cards_directory = r'pokerpython\cards'
+
+        # List files in the directory
+        files = os.listdir(cards_directory)
+
+        # Loop through the files
+        for file_name in files:
+            # Extract card name from file name
+            if file_name.endswith('.png'):
+                card_name = os.path.splitext(file_name)[0].lower()
+
+                # Convert card name
+                card_name = self.convert_card_name(card_name)
+
+                # Open the image file using PIL
+                image = Image.open(os.path.join(cards_directory, file_name))
+                
+                # Resize the image to a smaller size
+                resized_image = image.resize((100, 150), Image.LANCZOS)
+                
+                # Convert the resized image to PhotoImage
+                photo_image = ImageTk.PhotoImage(resized_image)
+
+                # Add the card image to the dictionary
+                self.card_images[card_name] = photo_image
+
+    def convert_card_name(self, card_name):
+        # Dictionary mapping long names to their corresponding short names
+        name_mapping = {
+            "ace": "A",
+            "king": "K",
+            "queen": "Q",
+            "jack": "J",
+            "ten": "10",
+            "nine": "9",
+            "eight": "8",
+            "seven": "7",
+            "six": "6",
+            "five": "5",
+            "four": "4",
+            "three": "3",
+            "two": "2"
+        }
+
+        # Split the card name into individual words
+        words = card_name.split(" ")
+
+        # Convert each word to the desired format
+        converted_words = [name_mapping[word] if word in name_mapping else word.lower() for word in words]
+
+        # Join the converted words back into a single string
+        converted_card_name = " ".join(converted_words)
+
+
+        return converted_card_name
+
+    def display_card_images(self):
+        # Display card images along with their names
+        row = 0
+        for converted_card_name, image in self.card_images.items():
+            label = tk.Label(self.root, text=converted_card_name, image=image, compound=tk.TOP)
+            label.grid(row=row // 10, column=row % 10, padx=0, pady=0)
+            row += 1
+
+
 def main():
     root = tk.Tk()
-    game_setup_screen = GameSetupScreen(root)
+    main_screen = MainScreen(root)
     root.mainloop()
 
+# used to test setup screen
+#def main():
+#    root = tk.Tk()
+#    game_setup_screen = GameSetupScreen(root)
+#    root.mainloop()
+    
 if __name__ == "__main__":
     main()
