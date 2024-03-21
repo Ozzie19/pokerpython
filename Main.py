@@ -1,7 +1,8 @@
 from Deck import Card, Deck
 import random
 from itertools import combinations
-import unittest
+import tkinter as tk # required for GUI
+from tkinter import messagebox
 
 #deck = Deck()
 #deck.shuffle()
@@ -465,8 +466,93 @@ class PokerHandEvaluator:
         return best_hand
 
 
-# Initiate a game with the list of players 
-game = Game()
+class GameSetupScreen:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Poker Game Setup")
 
-# Start the game
-game.start_game()
+        # Label and entry for specifying the number of players
+        self.num_players_label = tk.Label(root, text="Number of Players:")
+        self.num_players_label.pack()
+        self.num_players_entry = tk.Entry(root)
+        self.num_players_entry.pack()
+
+        # Labels and entries for entering player names
+        self.players_info_label = tk.Label(root, text="Enter Player Names:")
+        self.players_info_label.pack()
+        self.player_name_entries = []
+        for i in range(1, 11):  # Assuming a maximum of 10 players
+            player_label = tk.Label(root, text=f"Player {i}:")
+            player_label.pack()
+            player_entry = tk.Entry(root)
+            player_entry.pack()
+            self.player_name_entries.append(player_entry)
+
+        # Label and entry for specifying starting chips
+        self.starting_chips_label = tk.Label(root, text="Starting Chips:")
+        self.starting_chips_label.pack()
+        self.starting_chips_entry = tk.Entry(root)
+        self.starting_chips_entry.pack()
+
+        # Button to start the game
+        self.start_game_button = tk.Button(root, text="Start Game", command=self.start_game)
+        self.start_game_button.pack()
+
+    def start_game(self):
+        # Get the number of players specified by the user
+        num_players_str = self.num_players_entry.get()
+        if not num_players_str.isdigit():  # Check if the input is a positive integer
+            messagebox.showerror("Error", "Number of players must be a positive integer.")
+            return
+        num_players = int(num_players_str)
+        if num_players < 1 or num_players > 10:  # Check if the number of players is within a valid range
+            messagebox.showerror("Error", "Number of players must be between 1 and 10.")
+            return
+        
+        # Get the player names specified by the user
+        player_names = []
+        for entry in self.player_name_entries[:num_players]:  # Iterate over player name entries
+            name = entry.get().strip()  # Remove leading and trailing whitespaces
+            if name:  # Check if the name is not empty
+                player_names.append(name)  # Append non-empty names to the list
+        
+        # Validate the number of non-empty player names
+        if len(player_names) != num_players:
+            messagebox.showerror("Error", "Number of non-empty player names does not match the specified number of players.")
+            return
+        
+        # Get the starting chips specified by the user
+        starting_chips_str = self.starting_chips_entry.get()
+        if not starting_chips_str.isdigit():  # Check if the input is a positive integer
+            messagebox.showerror("Error", "Starting chips must be a positive integer.")
+            return
+        starting_chips = int(starting_chips_str)
+        if starting_chips < 1:  # Check if the starting chips is a positive number
+            messagebox.showerror("Error", "Starting chips must be a positive integer.")
+            return
+
+        # Close the setup screen
+        self.root.destroy()
+
+        # Start the game with the gathered information
+        start_game(num_players, starting_chips, player_names)
+
+def start_game(num_players, starting_chips, player_names):
+    # Placeholder function for starting the game
+    print("Starting Game...")
+    print("Number of Players:", num_players)
+    print("Starting Chips:", starting_chips)
+    print("Player Names:", player_names)
+
+def main():
+    # Create the root window
+    root = tk.Tk()
+    # Create an instance of the game setup screen
+    game_setup_screen = GameSetupScreen(root)
+    # Start the tkinter event loop
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
+
+
