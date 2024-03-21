@@ -246,12 +246,9 @@ class Game:
         player = Player(name, chips)
         self.players.append(player)
 
-    def start_game(self):
-        num_players = int(input("Enter the number of players: "))
-        chips = int(input("Enter the initial chips for each player: "))
+    def start_game(self, num_players, starting_chips, player_names):
         for i in range(num_players):
-            name = input(f"Enter the name of player {i+1}: ")
-            self.add_player(name, chips)
+            self.add_player(player_names[i], starting_chips)
         
         while True:
             # play a round
@@ -558,13 +555,8 @@ class GameSetupScreen:
             return
 
         self.root.destroy()
-        start_game(num_players, starting_chips, player_names)
-
-def start_game(num_players, starting_chips, player_names):
-    print("Starting Game...")
-    print("Number of Players:", num_players)
-    print("Starting Chips:", starting_chips)
-    print("Player Names:", player_names)
+        game = Game()
+        game.start_game(num_players, starting_chips, player_names)
 
 def main():
     root = tk.Tk()
