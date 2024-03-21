@@ -4,6 +4,7 @@ from itertools import combinations
 import tkinter as tk # required for GUI
 from tkinter import messagebox
 import os
+from PIL import Image, ImageTk  # Import Image and ImageTk from PIL module
 
 #deck = Deck()
 #deck.shuffle()
@@ -559,19 +560,95 @@ class GameSetupScreen:
         game = Game()
         game.start_game(num_players, starting_chips, player_names)
 
-from PIL import Image, ImageTk  # Import Image and ImageTk from PIL module
 
 class MainScreen:
-    def __init__(self, root):
+    def __init__(self, root, num_players, player_names):
         self.root = root
         self.root.title("Poker Game")
         self.root.attributes("-fullscreen", True)
+        self.root.configure(bg="#108F33")  # Set background color to the green from the setup screen
 
         # Load card images
         self.load_card_images()
 
-        # Display card images
-        self.display_card_images()
+        # Create a canvas for the card holder box
+        self.card_holder_canvas = tk.Canvas(root, bg="#108F33", bd=2, highlightthickness=0)
+        self.card_holder_canvas.place(relx=1, rely=0, anchor="ne", width=940, height=240)  # Adjust dimensions
+        self.card_holder_canvas.create_rectangle(10, 30, 920, 230, outline="#D9D9D9")  # Adjust dimensions and padding
+
+        # Create the label for displaying pot
+        self.pot_label = tk.Label(root, text="Pot:", font=("Arial", 18), bg="#D9D9D9")
+        self.pot_label.place(relx=0, rely=1, anchor="sw", x=980, y=-800)  # Adjust position
+
+        # Initialize pot value
+        self.pot_value = 0
+        self.update_pot(self.pot_value)
+
+        # Create a big box at the bottom right half of the screen for player actions
+        self.action_box = tk.Canvas(root, bg="#A0DDFF")
+        self.action_box.place(relx=1, rely=1, anchor="se", width=root.winfo_screenwidth() / 2, height=root.winfo_screenheight() / 2)
+
+        # Create a small box with the current player's name at the top left of the big box
+        self.current_player_box = tk.Canvas(root, bg="#D9D9D9")
+        self.current_player_box.place(relx=1, rely=1, anchor="se", width=root.winfo_screenwidth() / 2, height=50, x=0, y=-root.winfo_screenheight() / 2)
+
+        # Create a label to display the current player's name
+        self.current_player_name = "Player 1"  # You can change this dynamically based on the current player
+        self.player_name_label = tk.Label(root, text=self.current_player_name, font=("Arial", 12), bg="#D9D9D9")
+        self.player_name_label.place(relx=1, rely=1, anchor="se", width=root.winfo_screenwidth() / 2, height=50, x=0, y=-root.winfo_screenheight() / 2)
+
+        # Create a dropdown menu for player actions
+        self.action_options = ["Check", "Bet", "Call", "Raise", "Fold"]
+        self.selected_action = tk.StringVar(root)
+        self.selected_action.set(self.action_options[0])  # Default action is Check
+        self.action_menu = tk.OptionMenu(root, self.selected_action, *self.action_options)
+        self.action_menu.config(width=10, font=("Arial", 12))
+        self.action_menu.place(relx=1, rely=1, anchor="se", width=root.winfo_screenwidth() / 2, height=50)
+
+        # Bind the action_menu to update the selected action
+        self.selected_action.trace("w", self.update_selected_action)
+
+        # Create a canvas for displaying player hands, chips, and current bet
+        self.players_canvas = tk.Canvas(root, bg="#D9D9D9")
+        self.players_canvas.place(relx=0, rely=0, anchor="nw", width=root.winfo_screenwidth() / 2, height=root.winfo_screenheight())
+
+        # Calculate the height of each player's box
+        player_box_height = root.winfo_screenheight() / num_players
+
+        # Create boxes for each player
+        for i in range(num_players):
+            player_box = tk.Frame(root, bg="#FFFFFF", highlightbackground="#000000", highlightthickness=1)
+            player_box.place(relx=0, rely=i / num_players, relwidth=0.5, relheight=1 / num_players)
+
+            # Example: Add labels for chip balance, current bet (stake), and card images for each player
+            chip_balance_label = tk.Label(player_box, text="Chips: 1000", font=("Arial", 10), bg="#FFFFFF")
+            chip_balance_label.pack(side="left")
+
+            stake_label = tk.Label(player_box, text="Stake: 50", font=("Arial", 10), bg="#FFFFFF")
+            stake_label.pack()
+
+            player_name_label = tk.Label(player_box, text=f"Player Name: {player_names[i]}", font=("Arial", 10), bg="#FFFFFF")
+            player_name_label.pack(side="right")
+
+            # Add images of cards
+            card_image1 = tk.Label(player_box, image=self.card_images['default'], bg="#FFFFFF")
+            card_image1.pack(side="left")
+            card_image2 = tk.Label(player_box, image=self.card_images['default'], bg="#FFFFFF")
+            card_image2.pack(side="left")
+
+
+    def update_selected_action(self, *args):
+        # This method will be called whenever the selected action is changed
+        print("Selected action:", self.selected_action.get())  
+
+    def update_pot(self, pot_value):
+        self.pot_value = pot_value
+        # Update the label text with the new pot value
+        self.pot_label.config(text=f"Pot: {self.pot_value}")
+
+    def update_selected_action(self, *args):
+        # This method will be called whenever the selected action is changed
+        print("Selected action:", self.selected_action.get())  # For testing, you can replace print with any other action
 
     def load_card_images(self):
         # Dictionary to store the paths to card images
@@ -596,7 +673,7 @@ class MainScreen:
                 image = Image.open(os.path.join(cards_directory, file_name))
                 
                 # Resize the image to a smaller size
-                resized_image = image.resize((100, 150), Image.LANCZOS)
+                resized_image = image.resize((50, 100), Image.LANCZOS)
                 
                 # Convert the resized image to PhotoImage
                 photo_image = ImageTk.PhotoImage(resized_image)
@@ -634,19 +711,21 @@ class MainScreen:
 
         return converted_card_name
 
-    def display_card_images(self):
+    #def display_card_images(self):
         # Display card images along with their names
-        row = 0
-        for converted_card_name, image in self.card_images.items():
-            label = tk.Label(self.root, text=converted_card_name, image=image, compound=tk.TOP)
-            label.grid(row=row // 10, column=row % 10, padx=0, pady=0)
-            row += 1
+        #row = 0
+        #for converted_card_name, image in self.card_images.items():
+            #label = tk.Label(self.root, text=converted_card_name, image=image, compound=tk.TOP)
+            #label.grid(row=row // 10, column=row % 10, padx=0, pady=0)
+            #row += 1
 
 
 def main():
     root = tk.Tk()
-    main_screen = MainScreen(root)
+    player_names = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8", "Player 9", "Player 10"]
+    main_screen = MainScreen(root, 10, player_names)
     root.mainloop()
+
 
 # used to test setup screen
 #def main():
