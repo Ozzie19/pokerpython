@@ -5,6 +5,7 @@ import tkinter as tk # required for GUI
 from tkinter import messagebox
 import os
 from PIL import Image, ImageTk  # Import Image and ImageTk from PIL module
+import time
 
 #deck = Deck()
 #deck.shuffle()
@@ -100,6 +101,7 @@ class BettingRound:
             print(f'{player.name} has {player.chips} chips left.')
 
             # Determine the player's action
+            MainScreen.update_current_player(player.name) #update current player on GUI
             action = input(f'{player.name}, enter your action (check, bet, call, raise, or fold): ').lower()
 
             # Handle the player's action
@@ -214,8 +216,8 @@ class BettingRound:
         winners = [player for player in self.players if (player.cards + community_cards) == best_hand]
 
         # Print the winners
-        for winner in winners:
-            print(f'{winner.name} is a winner!')
+        #for winner in winners:
+            #print(f'{winner.name} is a winner!')
 
         if len(winners) > 1:
             # It's a tie, compare kickers
@@ -251,6 +253,10 @@ class Game:
     def start_game(self, num_players, starting_chips, player_names):
         for i in range(num_players):
             self.add_player(player_names[i], starting_chips)
+
+        root = tk.Tk()
+        MainScreen(root, num_players, player_names)
+        root.mainloop()
         
         while True:
             # play a round
@@ -635,7 +641,10 @@ class MainScreen:
             card_image1.pack(side="left")
             card_image2 = tk.Label(player_box, image=self.card_images['default'], bg="#FFFFFF")
             card_image2.pack(side="left")
-
+    
+    def update_current_player(self, new_player_name):
+        self.current_player_name = new_player_name
+        self.player_name_label.config(text=f"Player Name: {self.current_player_name}")
 
     def update_selected_action(self, *args):
         # This method will be called whenever the selected action is changed
@@ -718,20 +727,66 @@ class MainScreen:
             #label = tk.Label(self.root, text=converted_card_name, image=image, compound=tk.TOP)
             #label.grid(row=row // 10, column=row % 10, padx=0, pady=0)
             #row += 1
+    
+# Define a new class called ResultsScreen, which inherits from tk.Toplevel
+class ResultsScreen(tk.Toplevel):
+    # The __init__ method is called when an instance of the class is created
+    def __init__(self, winners):
+        # Call the __init__ method of the parent class (tk.Toplevel)
+        super().__init__()
+        # Store the list of winners
+        self.winners = winners
+        # Set the title of the window
+        self.title("Results")
+        # Set the size of the window
+        self.geometry("300x200")
+        # Call the display_results method to display the results
+        self.display_results()
 
+    # Define a method to display the results
+    def display_results(self):
+        # Create a label with the text "Winners:"
+        result_label = tk.Label(self, text="Winners:")
+        # Add the label to the window
+        result_label.pack()
 
+        # Loop over the list of winners
+        for winner in self.winners:
+            # For each winner, create a label with their name and remaining chips
+            winner_label = tk.Label(self, text=f"{winner.name} wins with a new balance of {winner.chips} chips remaining.", wraplength=200)
+            # Add the label to the window
+            winner_label.pack()
+
+        # Ask the user if they want to play again
+        play_again = messagebox.askyesno("Play Again", "Would you like to play another round?")
+        # If the user wants to play again
+        if play_again:
+            # Create a new root window
+            root = tk.Tk()
+            # Create a new game setup screen in the root window
+            game_setup_screen = GameSetupScreen(root)
+            # Start the main event loop
+            root.mainloop()
+            # Destroy the results screen
+            self.destroy()
 def main():
-    root = tk.Tk()
-    player_names = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8", "Player 9", "Player 10"]
-    main_screen = MainScreen(root, 10, player_names)
-    root.mainloop()
+    player1 = Player("Player 1", 1000)
+    player2 = Player("Player 2", 100)
+    results_screen = ResultsScreen([player2])
 
-
-# used to test setup screen
+#used to test main screen
 #def main():
-#    root = tk.Tk()
-#    game_setup_screen = GameSetupScreen(root)
-#    root.mainloop()
+    #root = tk.Tk()
+    #player_names = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7", "Player 8", "Player 9", "Player 10"]
+    #main_screen = MainScreen(root, 10, player_names)
+    #root.mainloop()
+
+
+ #used to test setup screen
+#def main():
+    #root = tk.Tk()
+    #game_setup_screen = GameSetupScreen(root)
+    #root.mainloop()
     
 if __name__ == "__main__":
     main()
